@@ -1,0 +1,83 @@
+name: SY108 firmware build
+
+on:
+  push:
+    branches:
+      - ci-build
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  firmware:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 350
+    env:
+      SY108_JOBS: "4"
+      SY108_MEMORY: "12g"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Runner facts
+        run: |
+          uname -a
+          nproc
+          free -h
+          df -h /
+          python3 --version
+          git --version
+          docker version --format '{{.Server.Version}}'
+          docker run --rm --platform linux/arm64 debian:13 /bin/uname -m
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift || true
+          sudo docker image prune -af || true
+          df -h /
+
+      - name: Bootstrap build tree
+        run: tools/python tools/bootstrap.py
+
+      - name: Build main image
+        run: tools/python tools/build/firmware.py main --jobs "$SY108_JOBS"
+
+      - name: Build recovery image
+        run: tools/python tools/build/firmware.py recovery --jobs "$SY108_JOBS"
+
+      - name: Package results
+        run: |
+          mkdir -p dist
+          cp -a out/images/main dist/main
+          cp -a out/images/recovery dist/recovery
+          (cd dist/main && sha256sum * > SHA256SUMS)
+          (cd dist/recovery && sha256sum * > SHA256SUMS)
+          tar -C dist -czf dist/sy108-images.tar.gz main recovery
+          du -sh dist
+          ls -l dist/main dist/recovery
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sy108-images
+          path: dist
+          retention-days: 30
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: SY108 firmware build #${{ github.run_number }}
+          prerelease: true
+          body: |
+            Automated build of `${{ github.sha }}` on `ubuntu-24.04-arm`.
+            Assets: main `sysupgrade.bin` / `boot.bin`, recovery `boot.bin`, kernel `Image`, `board.dtb`, checksums.
+          files: |
+            dist/sy108-images.tar.gz
+            dist/main/sysupgrade.bin
+            dist/main/boot.bin
+            dist/main/SHA256SUMS
+            dist/recovery/boot.bin
+            dist/recovery/SHA256SUMS
