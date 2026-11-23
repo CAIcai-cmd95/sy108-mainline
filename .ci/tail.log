@@ -1,0 +1,26 @@
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /home/runner/work/sy108-mainline/sy108-mainline/out/linux/.git/
+From https://github.com/jason-liu-4980/linux-udx710
+ * branch                14658d97220a06e34976d703e167073462390c78 -> FETCH_HEAD
+HEAD is now at 14658d972 arm64: sprd: consolidate SY108 DT and GPIO/hwspinlock fallbacks
+Linux archive checksum mismatch
+Traceback (most recent call last):
+  File "/home/runner/work/sy108-mainline/sy108-mainline/tools/bootstrap.py", line 84, in <module>
+    main()
+  File "/home/runner/work/sy108-mainline/sy108-mainline/tools/bootstrap.py", line 38, in main
+    subprocess.run([sys.executable, str(PROJECT / 'tools/build/kernel-source.py')], check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/python3', '/home/runner/work/sy108-mainline/sy108-mainline/tools/build/kernel-source.py']' returned non-zero exit status 1.
