@@ -39,13 +39,19 @@ jobs:
           df -h /
 
       - name: Bootstrap build tree
-        run: tools/python tools/bootstrap.py
+        run: |
+          set -o pipefail
+          tools/python tools/bootstrap.py 2>&1 | tee /tmp/ci.log
 
       - name: Build main image
-        run: tools/python tools/build/firmware.py main --jobs "$SY108_JOBS"
+        run: |
+          set -o pipefail
+          tools/python tools/build/firmware.py main --jobs "$SY108_JOBS" 2>&1 | tee -a /tmp/ci.log
 
       - name: Build recovery image
-        run: tools/python tools/build/firmware.py recovery --jobs "$SY108_JOBS"
+        run: |
+          set -o pipefail
+          tools/python tools/build/firmware.py recovery --jobs "$SY108_JOBS" 2>&1 | tee -a /tmp/ci.log
 
       - name: Package results
         run: |
@@ -81,3 +87,16 @@ jobs:
             dist/main/SHA256SUMS
             dist/recovery/boot.bin
             dist/recovery/SHA256SUMS
+
+      - name: Save CI log on failure
+        if: failure()
+        run: |
+          mkdir -p .ci
+          cp /tmp/ci.log .ci/ci.log 2>/dev/null || true
+          tail -n 500 .ci/ci.log > .ci/tail.log 2>/dev/null || true
+          git config user.name "sy108-ci"
+          git config user.email "sy108-ci@users.noreply.github.com"
+          git checkout -B ci-logs-${{ github.run_number }}
+          git add -f .ci
+          git commit -m "ci: failure log for run ${{ github.run_number }}" || true
+          git push --force origin ci-logs-${{ github.run_number }}
